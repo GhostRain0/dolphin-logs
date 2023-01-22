@@ -88,6 +88,8 @@ static void ExecutePendingJobs(std::unique_lock<std::mutex>& state_lock)
 
 void Run()
 {
+  LR = 0;
+
   // Updating the host CPU's rounding mode must be done on the CPU thread.
   // We can't rely on PowerPC::Init doing it, since it's called from EmuThread.
   PowerPC::RoundingModeUpdated();

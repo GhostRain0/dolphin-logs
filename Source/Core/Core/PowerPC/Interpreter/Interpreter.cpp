@@ -110,6 +110,7 @@ void Interpreter::Shutdown()
 
 static bool s_start_trace = false;
 
+#include <stdio.h>
 static void Trace(const UGeckoInstruction& inst)
 {
   std::string regs;
@@ -126,11 +127,10 @@ static void Trace(const UGeckoInstruction& inst)
   }
 
   const std::string ppc_inst = Common::GekkoDisassembler::Disassemble(inst.hex, PC);
-  DEBUG_LOG_FMT(POWERPC,
-                "INTER PC: {:08x} SRR0: {:08x} SRR1: {:08x} CRval: {:016x} "
-                "FPSCR: {:08x} MSR: {:08x} LR: {:08x} {} {:08x} {}",
+
+  printf("INTER PC: 0x%08x SRR0: 0x%08x SRR1: 0x%08x CRval: 0x%016lx \nFPSCR: 0x%08x MSR: 0x%08x LR: 0x%08x \n %s \n %s\n",
                 PC, SRR0, SRR1, PowerPC::ppcState.cr.fields[0], FPSCR.Hex, MSR.Hex,
-                PowerPC::ppcState.spr[8], regs, inst.hex, ppc_inst);
+                PowerPC::ppcState.spr[8], regs.c_str(), ppc_inst.c_str());
 }
 
 bool Interpreter::HandleFunctionHooking(u32 address)
@@ -140,6 +140,8 @@ bool Interpreter::HandleFunctionHooking(u32 address)
     return type != HLE::HookType::Start;
   });
 }
+
+#include <iostream>
 
 int Interpreter::SingleStepInner()
 {
@@ -153,13 +155,11 @@ int Interpreter::SingleStepInner()
   m_prev_inst.hex = PowerPC::Read_Opcode(PC);
 
   // Uncomment to trace the interpreter
-  // if ((PC & 0x00FFFFFF) >= 0x000AB54C && (PC & 0x00FFFFFF) <= 0x000AB624)
-  //   s_start_trace = true;
-  // else
-  //   s_start_trace = false;
+  s_start_trace = true;
 
   if (s_start_trace)
   {
+
     Trace(m_prev_inst);
   }
 
@@ -251,80 +251,16 @@ void Interpreter::Run()
     // advance into slice 0 to get a correct slice length before executing any cycles.
     core_timing.Advance();
 
-    // we have to check exceptions at branches apparently (or maybe just rfi?)
-    if (Config::Get(Config::MAIN_ENABLE_DEBUGGING))
+    while (PowerPC::ppcState.downcount > 0)
     {
-#ifdef SHOW_HISTORY
-      s_pc_block_vec.push_back(PC);
-      if (s_pc_block_vec.size() > s_show_blocks)
-        s_pc_block_vec.erase(s_pc_block_vec.begin());
-#endif
+      m_end_block = false;
 
-      // Debugging friendly version of inner loop. Tries to do the timing as similarly to the
-      // JIT as possible. Does not take into account that some instructions take multiple cycles.
-      while (PowerPC::ppcState.downcount > 0)
+      int cycles = 0;
+      while (!m_end_block)
       {
-        m_end_block = false;
-        int cycles = 0;
-        while (!m_end_block)
-        {
-#ifdef SHOW_HISTORY
-          s_pc_vec.push_back(PC);
-          if (s_pc_vec.size() > s_show_steps)
-            s_pc_vec.erase(s_pc_vec.begin());
-#endif
-
-          // 2: check for breakpoint
-          if (PowerPC::breakpoints.IsAddressBreakPoint(PC))
-          {
-#ifdef SHOW_HISTORY
-            NOTICE_LOG_FMT(POWERPC, "----------------------------");
-            NOTICE_LOG_FMT(POWERPC, "Blocks:");
-            for (const u32 entry : s_pc_block_vec)
-              NOTICE_LOG_FMT(POWERPC, "PC: {:#010x}", entry);
-            NOTICE_LOG_FMT(POWERPC, "----------------------------");
-            NOTICE_LOG_FMT(POWERPC, "Steps:");
-            for (size_t j = 0; j < s_pc_vec.size(); j++)
-            {
-              // Write space
-              if (j > 0)
-              {
-                if (s_pc_vec[j] != s_pc_vec[(j - 1) + 4]
-                  NOTICE_LOG_FMT(POWERPC, "");
-              }
-
-              NOTICE_LOG_FMT(POWERPC, "PC: {:#010x}", s_pc_vec[j]);
-            }
-#endif
-            INFO_LOG_FMT(POWERPC, "Hit Breakpoint - {:08x}", PC);
-            CPU::Break();
-            if (GDBStub::IsActive())
-              GDBStub::TakeControl();
-            if (PowerPC::breakpoints.IsTempBreakPoint(PC))
-              PowerPC::breakpoints.Remove(PC);
-
-            Host_UpdateDisasmDialog();
-            return;
-          }
-          cycles += SingleStepInner();
-        }
-        PowerPC::ppcState.downcount -= cycles;
+        cycles += SingleStepInner();
       }
-    }
-    else
-    {
-      // "fast" version of inner loop. well, it's not so fast.
-      while (PowerPC::ppcState.downcount > 0)
-      {
-        m_end_block = false;
-
-        int cycles = 0;
-        while (!m_end_block)
-        {
-          cycles += SingleStepInner();
-        }
-        PowerPC::ppcState.downcount -= cycles;
-      }
+      PowerPC::ppcState.downcount -= cycles;
     }
   }
 }
