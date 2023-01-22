@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic "CMakeFiles/dolphin-nogui.dir/Platform.o" "CMakeFiles/dolphin-nogui.dir/PlatformHeadless.o" "CMakeFiles/dolphin-nogui.dir/MainNoGUI.o" "CMakeFiles/dolphin-nogui.dir/PlatformFBDev.o" -o dolphin-emu-nogui  -lcore -luicommon -lcpp-optparse 

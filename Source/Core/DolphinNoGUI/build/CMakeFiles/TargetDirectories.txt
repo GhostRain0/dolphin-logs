@@ -1,0 +1,7 @@
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/dolphin-nogui.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/edit_cache.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/rebuild_cache.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/list_install_components.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/install.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/install/local.dir
+/home/zaydq/Documents/dolphin/Source/Core/DolphinNoGUI/build/CMakeFiles/install/strip.dir
